@@ -27,14 +27,12 @@ Este proyecto corresponde a la **Variante 8** del documento de requerimientos de
 
 ## 2. Integrantes del equipo
 
-| Nombre | Rol principal | Rol secundario | Usuario GitHub |
-|--------|---------------|----------------|----------------|
-| *(Integrante 1)* | Backend & Estructuras (Lista, AVL) | Integración API externa | *(pendiente)* |
-| *(Integrante 2)* | Base de Datos & API Externa | Backend (Tabla Hash) | *(pendiente)* |
-| *(Integrante 3)* | Vistas Razor & Frontend | QA / Pruebas | *(pendiente)* |
-| *(Integrante 4)* | Estructuras (Grafo, Cola, Pila) & Documentación | Pruebas unitarias | *(pendiente)* |
-
-> Completar esta tabla con los nombres reales y usuarios de GitHub del equipo.
+| Nombre | Carné |
+|--------|---------------|
+| *1 - Esvin Eliznadro Urizar* | 0902-24-3618 |
+| *2 - José Luis Alexander Choc Cuc* | 0902-21-16593 |
+| *3 - Herberth Eduardo Coc Chon* | 0902-24-7727 |
+| *4 - Jason Isrrael Ajxup Cojoc* | 0902-24-478 |
 
 ---
 
@@ -234,9 +232,9 @@ dotnet run
 
 **5. Importar datos**
 
-Con la app corriendo en `http://localhost:5000`, llamar:
+Con la app corriendo en `http://localhost:5133`, llamar:
 ```
-POST http://localhost:5000/api/admin/importar
+POST http://localhost:5133/api/admin/importar
 ```
 
 Esto importa ~530 objetos desde la Solar System OpenData API y los carga en las estructuras de datos en memoria.
@@ -305,9 +303,9 @@ Ver [docs/tareas-integrante4.md](docs/tareas-integrante4.md) para los casos de p
 | Bitácora de consultas | ✅ Completo |
 | Historial Visitados (navbar) | ✅ Completo |
 | Despliegue Azure | ✅ Completo |
-| Pruebas unitarias | ⏳ Pendiente |
-| Documento PDF final | ⏳ Pendiente |
-| Presentación | ⏳ Pendiente |
+| Pruebas unitarias | ✅ Completo |
+| Documento PDF final | ✅ Completo |
+| Presentación | ✅ Completo |
 
 ---
 

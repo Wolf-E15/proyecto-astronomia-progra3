@@ -67,7 +67,7 @@ cd backend/AstronomiaApp
 dotnet restore
 dotnet run
 ```
-Al tener la app corriendo en `http://localhost:5000`, se debe llamar:
+Al tener la app corriendo en `http://localhost:5133`, se debe llamar:
 ```
 POST /api/admin/importar
 ```
