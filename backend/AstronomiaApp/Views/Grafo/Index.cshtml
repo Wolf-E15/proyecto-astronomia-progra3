@@ -174,7 +174,6 @@
 
     #resultado-ruta {
         margin-top: 1rem;
-        padding: .85rem 1rem;
         background: rgba(6, 8, 18, .7);
         border: 1px solid var(--line);
         border-left: 3px solid var(--gold);
@@ -187,6 +186,53 @@
     #resultado-ruta strong { color: var(--gold); font-weight: 500; }
     #resultado-ruta .text-danger { color: var(--rust) !important; }
     #resultado-ruta .text-warning { color: var(--gold-bright) !important; }
+
+    .ruta-resumen {
+        padding: .85rem 1rem;
+        border-bottom: 1px solid var(--line);
+    }
+    .ruta-resumen .ruta-path {
+        font-size: .95rem;
+        color: var(--cream);
+        letter-spacing: .03em;
+    }
+    .ruta-resumen .ruta-path span.nodo {
+        color: var(--gold-bright);
+        font-weight: 500;
+    }
+    .ruta-resumen .ruta-path span.flecha {
+        color: var(--muted);
+        margin: 0 .35rem;
+    }
+    .ruta-meta {
+        margin-top: .45rem;
+        font-size: .75rem;
+        color: var(--cream-3);
+        display: flex;
+        gap: 1.5rem;
+    }
+    .ruta-meta strong { color: var(--gold); }
+
+    .ruta-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .78rem;
+    }
+    .ruta-tabla thead tr {
+        background: rgba(212,166,87,.06);
+        color: var(--cream-3);
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        font-size: .68rem;
+    }
+    .ruta-tabla thead th { padding: .5rem .85rem; border-bottom: 1px solid var(--line); font-weight: 500; }
+    .ruta-tabla tbody td { padding: .5rem .85rem; border-bottom: 1px dashed rgba(42,51,70,.5); }
+    .ruta-tabla tbody tr:last-child td { border-bottom: none; }
+    .ruta-tabla .td-salto { color: var(--muted); text-align: center; width: 50px; }
+    .ruta-tabla .td-origen { color: var(--cyan); }
+    .ruta-tabla .td-destino { color: var(--gold-bright); }
+    .ruta-tabla .td-dist { color: var(--cream); text-align: right; font-feature-settings: 'tnum'; }
+    .ruta-tabla tfoot td { padding: .5rem .85rem; border-top: 1px solid var(--gold-deep); color: var(--gold); font-weight: 500; text-align: right; }
 
     /* ── Canvas ─────────────────────────────────────────────── */
     .canvas-wrap {
@@ -390,30 +436,68 @@
             const div = document.getElementById('resultado-ruta');
 
             if (!origen || !destino) {
-                div.textContent = 'Selecciona origen y destino.';
+                div.innerHTML = '<div class="ruta-resumen">Selecciona origen y destino.</div>';
                 return;
             }
+
+            div.innerHTML = '<div class="ruta-resumen" style="color:var(--muted)">Calculando ruta...</div>';
 
             try {
                 const r = await fetch(`/api/grafo/ruta?origen=${origen}&destino=${destino}`);
 
                 if (!r.ok) {
-                    div.innerHTML = '<span class="text-danger">No existe ruta entre esos objetos.</span>';
+                    div.innerHTML = '<div class="ruta-resumen"><span class="text-danger">No existe ruta entre esos objetos.</span></div>';
                     return;
                 }
 
                 const d = await r.json();
 
-                div.innerHTML = `<strong>Ruta:</strong> ${d.ruta.join(' → ')}
-                    &nbsp;·&nbsp; <strong>Distancia total:</strong> ${d.distanciaTotal.toFixed(4)} UA
-                    &nbsp;·&nbsp; <strong>Saltos:</strong> ${d.saltos}`;
+                // ── Línea resumen con nombres ──────────────────────────
+                const pathHtml = d.rutaNombres.map(n =>
+                    `<span class="nodo">${n}</span>`
+                ).join('<span class="flecha">→</span>');
+
+                const resumen = `
+                    <div class="ruta-resumen">
+                        <div class="ruta-path">${pathHtml}</div>
+                        <div class="ruta-meta">
+                            <span><strong>Distancia total:</strong> ${d.distanciaTotal.toFixed(4)} UA</span>
+                            <span><strong>Saltos:</strong> ${d.saltos}</span>
+                        </div>
+                    </div>`;
+
+                // ── Tabla de saltos ────────────────────────────────────
+                const filas = d.saltoDetalle.map(s => `
+                    <tr>
+                        <td class="td-salto">${s.salto}</td>
+                        <td class="td-origen">${s.origenNombre}</td>
+                        <td class="td-destino">${s.destinoNombre}</td>
+                        <td class="td-dist">${s.distancia.toFixed(4)} UA</td>
+                    </tr>`).join('');
+
+                const tabla = `
+                    <table class="ruta-tabla">
+                        <thead><tr>
+                            <th>#</th>
+                            <th>Origen</th>
+                            <th>Destino</th>
+                            <th style="text-align:right">Distancia</th>
+                        </tr></thead>
+                        <tbody>${filas}</tbody>
+                        <tfoot><tr>
+                            <td colspan="3">Total</td>
+                            <td>${d.distanciaTotal.toFixed(4)} UA</td>
+                        </tr></tfoot>
+                    </table>`;
+
+                div.innerHTML = resumen + tabla;
 
                 if (window.resaltarRutaGrafo) {
-                    window.resaltarRutaGrafo(d.ruta);
+                    window.resaltarRutaGrafo(d.rutaNombres);
                 }
 
             } catch (e) {
-                div.innerHTML = '<span class="text-danger">Error al calcular ruta.</span>';
+                div.innerHTML = '<div class="ruta-resumen"><span class="text-danger">Error al calcular ruta.</span></div>';
             }
         }
     </script>

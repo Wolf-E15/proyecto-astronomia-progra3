@@ -38,13 +38,33 @@ public class GrafoApiController : ControllerBase
         if (!resultado.Encontrada)
             return NotFound(new { error = true, mensaje = "No existe ruta entre los objetos indicados", codigo = "NO_ROUTE" });
 
+        var nombres = new List<string>();
+        foreach (var id in resultado.Ruta)
+            nombres.Add(await _grafoService.ObtenerNombreAsync(id));
+
+        var saltoDetalle = new List<object>();
+        for (int i = 0; i < resultado.Ruta.Count - 1; i++)
+        {
+            var vecinos = await _grafoService.ObtenerVecinosAsync(resultado.Ruta[i]);
+            var arista = vecinos.FirstOrDefault(v => v.Id == resultado.Ruta[i + 1]);
+            saltoDetalle.Add(new
+            {
+                salto = i + 1,
+                origenNombre = nombres[i],
+                destinoNombre = nombres[i + 1],
+                distancia = arista.Peso
+            });
+        }
+
         return Ok(new
         {
             origen,
             destino,
             distanciaTotal = resultado.DistanciaTotal,
             saltos = resultado.Ruta.Count - 1,
-            ruta = resultado.Ruta
+            ruta = resultado.Ruta,
+            rutaNombres = nombres,
+            saltoDetalle
         });
     }
 

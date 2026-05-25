@@ -115,6 +115,12 @@ public class GrafoService
         return _grafo.Dijkstra(origen, destino);
     }
 
+    public async Task<string> ObtenerNombreAsync(int id)
+    {
+        await CargarGrafoAsync();
+        return _grafo.ObtenerNombre(id);
+    }
+
     public async Task<IEnumerable<int>> BFSSistemaAsync(int idSistema)
     {
         await CargarGrafoAsync();
