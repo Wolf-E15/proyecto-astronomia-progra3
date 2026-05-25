@@ -65,12 +65,20 @@
   function inicializar() {
     const W = canvas.width;
     const H = canvas.height;
+    const n = data.nodos.length;
 
-    data.nodos.forEach(n => {
-      nodos[n.id] = {
-        ...n,
-        x: 80 + Math.random() * Math.max(W - 160, 100),
-        y: 80 + Math.random() * Math.max(H - 160, 100),
+    // Para N grande, distribuir en área más amplia que el canvas
+    const factor = Math.max(1, Math.sqrt(n / 80));
+    const areaW = W * factor;
+    const areaH = H * factor;
+    const offsetX = (W - areaW) / 2;
+    const offsetY = (H - areaH) / 2;
+
+    data.nodos.forEach(node => {
+      nodos[node.id] = {
+        ...node,
+        x: offsetX + Math.random() * areaW,
+        y: offsetY + Math.random() * areaH,
         vx: 0,
         vy: 0
       };
@@ -79,6 +87,12 @@
 
   function simularPaso() {
     const ids = Object.keys(nodos);
+    const n = ids.length;
+
+    // Repulsión más fuerte y rango más amplio para separar nodos
+    const repulsion = 3500;
+    const cutoff = 600;
+    const centerForce = n > 200 ? 0.0003 : 0.00045;
 
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
@@ -87,9 +101,12 @@
 
         const dx = b.x - a.x;
         const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const distSq = dx * dx + dy * dy + 1;
+        const dist = Math.sqrt(distSq);
 
-        const fuerza = 2800 / (dist * dist);
+        if (dist > cutoff) continue;
+
+        const fuerza = repulsion / distSq;
         const fx = (dx / dist) * fuerza;
         const fy = (dy / dist) * fuerza;
 
@@ -109,7 +126,7 @@
       const dy = d.y - o.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-      const fuerza = (dist - 145) * 0.022;
+      const fuerza = (dist - 220) * 0.018;
       const fx = (dx / dist) * fuerza;
       const fy = (dy / dist) * fuerza;
 
@@ -121,18 +138,26 @@
 
     const W = canvas.width;
     const H = canvas.height;
+    const maxVel = 8;
 
     ids.forEach(id => {
-      const n = nodos[id];
+      const nodo = nodos[id];
 
-      n.vx += (W / 2 - n.x) * 0.00045;
-      n.vy += (H / 2 - n.y) * 0.00045;
+      nodo.vx += (W / 2 - nodo.x) * centerForce;
+      nodo.vy += (H / 2 - nodo.y) * centerForce;
 
-      n.vx *= 0.84;
-      n.vy *= 0.84;
+      nodo.vx *= 0.84;
+      nodo.vy *= 0.84;
 
-      n.x += n.vx;
-      n.y += n.vy;
+      // Cap velocity to prevent explosion
+      const vmag = Math.sqrt(nodo.vx * nodo.vx + nodo.vy * nodo.vy);
+      if (vmag > maxVel) {
+        nodo.vx = (nodo.vx / vmag) * maxVel;
+        nodo.vy = (nodo.vy / vmag) * maxVel;
+      }
+
+      nodo.x += nodo.vx;
+      nodo.y += nodo.vy;
     });
   }
 
@@ -346,6 +371,18 @@
       ctx.beginPath();
       ctx.arc(n.x, n.y, radio / scale, 0, Math.PI * 2);
       ctx.stroke();
+
+      if (resaltado) {
+        const pulse = 1 + 0.35 * Math.sin(Date.now() / 300);
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, (radio + 6) * pulse / scale, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(250,204,21,0.8)';
+        ctx.lineWidth = 2 / scale;
+        ctx.shadowColor = 'rgba(250,204,21,0.9)';
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
 
       // Constelaciones siempre muestran su nombre
       if (scale > 0.32 || hover || resaltado || isConst) {
@@ -672,6 +709,33 @@
 
   window.resaltarRutaGrafo = function (ruta) {
     highlightedNames = Array.isArray(ruta) ? ruta : [];
+
+    if (highlightedNames.length === 0) return;
+
+    const nodosRuta = highlightedNames
+      .map(name => Object.values(nodos).find(n => n.nombre === name))
+      .filter(n => n);
+
+    if (nodosRuta.length === 0) return;
+
+    const xs = nodosRuta.map(n => n.x);
+    const ys = nodosRuta.map(n => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const w = Math.max(maxX - minX, 300);
+    const h = Math.max(maxY - minY, 300);
+
+    const padding = 150;
+    const newScale = Math.min(
+      (canvas.width  - padding * 2) / w,
+      (canvas.height - padding * 2) / h,
+      1.2
+    );
+    targetScale = Math.max(0.1, newScale);
+    targetOffset.x = canvas.width  / 2 - centerX * targetScale;
+    targetOffset.y = canvas.height / 2 - centerY * targetScale;
   };
 
   // ── Botones de zoom ────────────────────────────────────────────────────────
@@ -688,9 +752,34 @@
   }
 
   function resetView() {
-    targetScale    = 1;
-    targetOffset.x = 0;
-    targetOffset.y = 0;
+    const todos = Object.values(nodos);
+    if (todos.length === 0) {
+      targetScale = 1;
+      targetOffset.x = 0;
+      targetOffset.y = 0;
+      return;
+    }
+
+    const xs = todos.map(n => n.x);
+    const ys = todos.map(n => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const w = Math.max(maxX - minX, 200);
+    const h = Math.max(maxY - minY, 200);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    const padding = 80;
+    const newScale = Math.min(
+      (canvas.width  - padding * 2) / w,
+      (canvas.height - padding * 2) / h,
+      1
+    );
+    targetScale    = Math.max(0.08, newScale);
+    targetOffset.x = canvas.width  / 2 - centerX * targetScale;
+    targetOffset.y = canvas.height / 2 - centerY * targetScale;
+
+    highlightedNames = [];
   }
 
   const btnZoomIn  = document.getElementById('grafo-btn-zoomin');
