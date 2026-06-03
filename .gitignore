@@ -59,15 +59,6 @@ temp/
 dist/
 build/
 
-# ---------- Herramientas de asistencia / IA ----------
-.claude/
-.claude-*
-CLAUDE.md
-**/CLAUDE.md
-.cursor/
-.aider*
-.github/copilot-instructions.md
-
 # ---------- otros ----------
 RequerimientoFinal.pdf
 ProyectoPrograIII.sln
